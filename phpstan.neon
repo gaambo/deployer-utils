@@ -1,0 +1,7 @@
+parameters:
+    level: 6
+    paths:
+        - src
+        - tasks
+    scanDirectories:
+        - vendor/deployer/deployer

@@ -1,0 +1,79 @@
+{
+  "name": "gaambo/deployer-utils",
+  "description": "Shared utilities for Deployer recipe packages",
+  "type": "library",
+  "license": "MIT",
+  "homepage": "https://github.com/gaambo/deployer-utils",
+  "authors": [
+    {
+      "name": "Fabian Todt",
+      "email": "fabian@fabiantodt.at"
+    }
+  ],
+  "require": {
+    "php": "^8.3",
+    "deployer/deployer": "^8.0"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^10.5",
+    "squizlabs/php_codesniffer": "^3.11 || ^4.0",
+    "symfony/console": "^7.4.0 || ^8.0.0",
+    "symfony/process": "^7.4.0 || ^8.0.0"
+  },
+  "autoload": {
+    "files": [
+      "src/functions.php"
+    ],
+    "psr-4": {
+      "Gaambo\\DeployerUtils\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Gaambo\\DeployerUtils\\Tests\\": "tests/",
+      "Deployer\\": "vendor/deployer/deployer/src/"
+    }
+  },
+  "scripts": {
+    "phpcs": "vendor/bin/phpcs -s",
+    "phpcs:fix": "vendor/bin/phpcbf",
+    "phpstan": "vendor/bin/phpstan analyse --memory-limit 1G",
+    "lint": "find . -type f -name '*.php' -not -path './vendor/*' -exec php -l {} \\;",
+    "phpunit": "DO_NOT_TRACK=true vendor/bin/phpunit",
+    "tests:unit": "DO_NOT_TRACK=true vendor/bin/phpunit --testsuite Unit",
+    "tests:unit:coverage": "DO_NOT_TRACK=true XDEBUG_MODE=coverage vendor/bin/phpunit --testsuite Unit --coverage-text",
+    "tests:integration": "DO_NOT_TRACK=true vendor/bin/phpunit --testsuite Integration",
+    "tests:integration:coverage": "DO_NOT_TRACK=true XDEBUG_MODE=coverage vendor/bin/phpunit --testsuite Integration --coverage-text",
+    "tests:functional": "DO_NOT_TRACK=true vendor/bin/phpunit --testsuite Functional",
+    "tests:functional:coverage": "DO_NOT_TRACK=true XDEBUG_MODE=coverage vendor/bin/phpunit --testsuite Functional --coverage-text",
+    "tests": [
+      "@tests:unit",
+      "@tests:integration",
+      "@tests:functional"
+    ],
+    "tests:coverage": "DO_NOT_TRACK=true XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html=tests/coverage",
+    "precommit": [
+      "@lint",
+      "@phpcs",
+      "@phpstan",
+      "@composer validate",
+      "@tests"
+    ]
+  },
+  "config": {
+    "allow-plugins": false,
+    "preferred-install": {
+      "*": "dist"
+    },
+    "policy": {
+      "advisories": {
+        "audit": "report"
+      },
+      "abandoned": {
+        "audit": "report"
+      }
+    },
+    "sort-packages": true
+  }
+}

@@ -1,0 +1,63 @@
+name: Code Quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  code-quality:
+    name: Code Quality (PHP ${{ matrix.php }}, Deployer 8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: write
+    strategy:
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP and tools
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2.37.1
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2, cs2pr
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
+        with:
+          dependency-versions: highest
+          composer-options: '--prefer-dist --no-progress'
+
+      - name: Audit Composer packages
+        run: composer audit
+
+      - name: Run PHP syntax linting
+        run: composer run-script lint
+
+      - name: Run PHP CodeSniffer
+        run: |
+          composer run-script phpcs -- --standard=phpcs.xml --report-checkstyle=./phpcs-report.xml
+          cs2pr ./phpcs-report.xml
+
+      - name: Run PHPStan
+        run: |
+          composer run-script phpstan -- --error-format=checkstyle > phpstan-report.xml
+          cs2pr ./phpstan-report.xml
