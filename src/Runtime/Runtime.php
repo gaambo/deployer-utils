@@ -131,7 +131,7 @@ abstract class Runtime implements \JsonSerializable
         }
 
         if ($runtime === null) {
-            return $contextHost instanceof DeployerLocalhost
+            return self::isConfiguredLocalhost($contextHost)
                 ? Localhost::runNative($command, $options)
                 : self::runOnCurrentHost($command, $options);
         }
@@ -167,7 +167,7 @@ abstract class Runtime implements \JsonSerializable
         $contextHost = self::currentContextHost();
         $runtime = self::runtimeForContextHost($contextHost);
         if ($runtime === null) {
-            return $contextHost instanceof DeployerLocalhost
+            return self::isConfiguredLocalhost($contextHost)
                 ? Localhost::getConfig($key)
                 : $contextHost->get($key);
         }
@@ -365,6 +365,14 @@ abstract class Runtime implements \JsonSerializable
     private static function currentContextHost(): Host
     {
         return Context::has() ? Context::get()->getHost() : Localhost::get();
+    }
+
+    /**
+     * Returns whether a context host is the configured localhost helper target.
+     */
+    private static function isConfiguredLocalhost(Host $contextHost): bool
+    {
+        return $contextHost === Localhost::get();
     }
 
     /**

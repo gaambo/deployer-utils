@@ -166,6 +166,29 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         $this->assertSame('PHP 8.3', $result);
     }
 
+    public function testRunWithoutRuntimeUsesCurrentNamedLocalhost(): void
+    {
+        $namedLocalhost = new DeployerLocalhost('testremote');
+        $namedLocalhost->set('deploy_path', '/srv/www');
+        $namedLocalhost->set('current_path', '/srv/www/current');
+        $namedLocalhost->set('bin/php', 'php');
+        $this->processRunnerMock->expects($this->once())
+            ->method('run')
+            ->willReturnCallback(function ($executionHost, $command, RunParams $options) use ($namedLocalhost) {
+                $this->assertSame($namedLocalhost, $executionHost);
+                $this->assertSame('php --version', $command);
+                $this->assertSame('/srv/www/current', $this->runCwd($options));
+                return 'PHP 8.3';
+            });
+
+        $result = $this->onHost(
+            $namedLocalhost,
+            fn() => Runtime::run('{{bin/php}} --version', ['cwd' => '{{current_path}}'])
+        );
+
+        $this->assertSame('PHP 8.3', $result);
+    }
+
     public function testDdevUsesContainerShellAndHostProjectCwd(): void
     {
         $this->host->set('runtime', runtime(DdevRuntime::class));
