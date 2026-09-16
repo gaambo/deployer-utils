@@ -29,6 +29,11 @@ class DdevRuntime extends Runtime
     protected function configure(Host $executionHost): void
     {
         $executionHost->set('deploy_path', '{{ddev_deploy_path}}');
+        if (!$this->sourceHost() instanceof Localhost) {
+            // SshClient applies working_path after starting the DDEV shell, so it
+            // must be a container path. ProcessRunner applies it before DDEV.
+            $executionHost->set('working_path', '{{deploy_path}}');
+        }
         $this->configureShell($this->hostDeployPath(), false);
     }
 

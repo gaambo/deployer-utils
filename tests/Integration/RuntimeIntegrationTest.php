@@ -287,10 +287,17 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         $this->assertFalse(Runtime::isActive());
     }
 
-    public function testRemoteCallableConfigResolvesInsideDdev(): void
+    public function testRemoteWpBinaryTestUsesContainerWorkingPath(): void
     {
         $remote = $this->remoteHost();
-        $remote->set('bin/wp', fn() => \Deployer\which('wp'));
+        $remote->set('bin/php', '/usr/bin/php');
+        $remote->set('bin/wp', function () {
+            if (\Deployer\test('[ -f {{deploy_path}}/.dep/wp-cli.phar ]')) {
+                return '{{bin/php}} {{deploy_path}}/.dep/wp-cli.phar';
+            }
+
+            return 'wp';
+        });
         $remote->set('runtime', runtime(DdevRuntime::class));
         $executionHost = null;
         $this->sshClientMock->expects($this->exactly(2))
@@ -304,10 +311,15 @@ class RuntimeIntegrationTest extends IntegrationTestCase
                     $this->runShell($options)
                 );
 
-                return match (str_replace("'", '', $command)) {
-                    'command -v wp || which wp || type -p wp' => '/runtime/bin/wp',
-                    '/runtime/bin/wp --info' => 'WP-CLI 2.12',
-                };
+                if (str_starts_with($command, 'if [ -f /var/www/html/.dep/wp-cli.phar ]; then echo +')) {
+                    $this->assertSame('/var/www/html', $this->runCwd($options));
+                    preg_match('/echo (\+\w+); fi$/', $command, $matches);
+                    return $matches[1];
+                }
+
+                $this->assertSame('/usr/bin/php /var/www/html/.dep/wp-cli.phar --info', $command);
+                $this->assertSame('', $this->runCwd($options));
+                return 'WP-CLI 2.12';
             });
 
         $result = $this->onHost(
@@ -398,6 +410,7 @@ class RuntimeIntegrationTest extends IntegrationTestCase
             ->willReturnCallback(function ($host, $command, RunParams $options) {
                 if ($host !== $this->host) {
                     $this->assertInstanceOf(DeployerLocalhost::class, $host);
+                    $this->assertSame('/var/www', $this->runCwd($options));
                     $this->assertSame($this->ddevShell('/var/www/html'), $this->runShell($options));
                 }
 
