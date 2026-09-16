@@ -2,8 +2,11 @@
 
 namespace Gaambo\DeployerUtils\Runtime;
 
+use Deployer\Host\Host;
 use Deployer\Task\Context;
 use Gaambo\DeployerUtils\Localhost;
+
+use function Gaambo\DeployerUtils\runtime;
 
 class Runtime
 {
@@ -21,11 +24,11 @@ class Runtime
      */
     public static function run(string $command, ?array $options = null): string
     {
+        $runtime = self::configured();
         if (isset($options['cwd'])) {
-            $options['cwd'] = Localhost::parse($options['cwd']);
+            $options['cwd'] = self::configuredHost()->config()->parse($options['cwd']);
         }
 
-        $runtime = self::configured();
         if ($runtime === null) {
             return Localhost::runNative($command, $options);
         }
@@ -70,16 +73,41 @@ class Runtime
 
     private static function configured(): ?RuntimeHost
     {
-        $runtime = Localhost::getConfig('runtime', null);
-        if ($runtime === null) {
+        $host = self::configuredHost();
+        if ($host instanceof RuntimeHost) {
+            return $host;
+        }
+
+        $configuration = $host->get('runtime', null);
+        if ($configuration === null) {
             return null;
         }
-        if (!$runtime instanceof RuntimeHost) {
+
+        if (is_array($configuration)) {
+            $type = $configuration['type'] ?? null;
+            if (!is_string($type)) {
+                throw new \InvalidArgumentException('Runtime configuration requires a string "type".');
+            }
+            $options = $configuration['options'] ?? [];
+            if (!is_array($options)) {
+                throw new \InvalidArgumentException('Runtime configuration "options" must be an array.');
+            }
+            $configuration = runtime($type, $options)();
+        }
+
+        if (!$configuration instanceof RuntimeHost) {
             throw new \InvalidArgumentException(
-                'The localhost "runtime" configuration must be an instance of RuntimeHost.'
+                'Runtime configuration must be a RuntimeHost or runtime definition.'
             );
         }
 
-        return $runtime;
+        $configuration->bind($host);
+
+        return $configuration;
+    }
+
+    private static function configuredHost(): Host
+    {
+        return Context::has() ? Context::get()->getHost() : Localhost::get();
     }
 }

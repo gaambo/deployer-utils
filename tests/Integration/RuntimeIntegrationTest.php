@@ -23,16 +23,41 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         $this->deployer['processRunner'] = $this->processRunnerMock;
     }
 
-    public function testFactoryCreatesUnregisteredRuntimeBoundToLocalhost(): void
+    public function testFactoryCreatesLazyRuntimeAndConfiguredRuntimeBindsIt(): void
     {
         $this->host->set('current_path', '{{deploy_path}}/current');
-        $runtime = runtime(DdevRuntimeHost::class);
+        $runtimeFactory = runtime(DdevRuntimeHost::class);
 
-        $this->assertInstanceOf(DeployerLocalhost::class, $runtime);
-        $this->assertSame('/var/www/html', $runtime->get('deploy_path'));
-        $this->assertSame('/var/www/html/current', $runtime->get('current_path'));
+        $this->assertIsCallable($runtimeFactory);
         $this->assertSame($this->host, $this->deployer->hosts->get('localhost'));
         $this->assertCount(1, $this->deployer->hosts);
+
+        $this->host->set('runtime', $runtimeFactory);
+        $runtime = $this->host->get('runtime');
+        $this->assertInstanceOf(DeployerLocalhost::class, $runtime);
+        $this->assertSame('/var/www/html', Runtime::getConfig('deploy_path'));
+        $this->assertSame('/var/www/html/current', Runtime::getConfig('current_path'));
+    }
+
+    public function testFactoryResolvesRuntimeAliasAndOptions(): void
+    {
+        $this->host->set('runtime', runtime('ddev', [
+            'ddev_deploy_path' => '/srv/app',
+        ]));
+
+        $this->assertSame('/srv/app', Runtime::getConfig('deploy_path'));
+    }
+
+    public function testYamlRuntimeDefinitionIsResolvedForTheActiveHost(): void
+    {
+        $this->host->set('runtime', [
+            'type' => 'ddev',
+            'options' => [
+                'ddev_deploy_path' => '/srv/app',
+            ],
+        ]);
+
+        $this->assertSame('/srv/app', Runtime::getConfig('deploy_path'));
     }
 
     public function testRunFallsBackToNativeLocalhostExecution(): void
@@ -54,8 +79,8 @@ class RuntimeIntegrationTest extends IntegrationTestCase
 
     public function testDdevUsesContainerShellAndHostProjectCwd(): void
     {
-        $runtime = runtime(DdevRuntimeHost::class);
-        $this->host->set('runtime', $runtime);
+        $this->host->set('runtime', runtime(DdevRuntimeHost::class));
+        $runtime = $this->host->get('runtime');
         $this->processRunnerMock->expects($this->once())
             ->method('run')
             ->willReturnCallback(function ($host, $command, RunParams $options) use ($runtime) {
@@ -71,8 +96,9 @@ class RuntimeIntegrationTest extends IntegrationTestCase
 
     public function testDdevMapsExplicitAndConfiguredPaths(): void
     {
-        $runtime = runtime(DdevRuntimeHost::class)->set('ddev_deploy_path', '/srv/app');
-        $this->host->set('runtime', $runtime);
+        $this->host->set('runtime', runtime(DdevRuntimeHost::class, [
+            'ddev_deploy_path' => '/srv/app',
+        ]));
 
         $this->assertSame('/srv/app/data/dump.sql', Runtime::path('/var/www/data/dump.sql'));
         $this->assertSame('/srv/app', Runtime::getConfig('deploy_path'));
@@ -132,8 +158,8 @@ class RuntimeIntegrationTest extends IntegrationTestCase
             $calls++;
             return \Deployer\which('php');
         });
-        $runtime = runtime(DdevRuntimeHost::class);
-        $this->host->set('runtime', $runtime);
+        $this->host->set('runtime', runtime(DdevRuntimeHost::class));
+        $runtime = $this->host->get('runtime');
         $this->processRunnerMock->expects($this->exactly(3))
             ->method('run')
             ->willReturnCallback(function ($host, $command, RunParams $options) use ($runtime) {
@@ -161,8 +187,8 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         foreach (['composer', 'npm', 'php'] as $binary) {
             $this->host->set("bin/$binary", fn() => \Deployer\which($binary));
         }
-        $runtime = runtime(DdevRuntimeHost::class);
-        $this->host->set('runtime', $runtime);
+        $this->host->set('runtime', runtime(DdevRuntimeHost::class));
+        $runtime = $this->host->get('runtime');
         $this->processRunnerMock->expects($this->exactly(3))
             ->method('run')
             ->willReturnCallback(function ($host, $command, RunParams $options) use ($runtime) {
@@ -179,8 +205,8 @@ class RuntimeIntegrationTest extends IntegrationTestCase
 
     public function testWithinUsesRuntimeAndRestoresNestedContexts(): void
     {
-        $runtime = runtime(DdevRuntimeHost::class);
-        $this->host->set('runtime', $runtime);
+        $this->host->set('runtime', runtime(DdevRuntimeHost::class));
+        $runtime = $this->host->get('runtime');
         $this->processRunnerMock->expects($this->exactly(3))
             ->method('run')
             ->willReturnCallback(function ($host, $command) use ($runtime) {
@@ -224,7 +250,9 @@ class RuntimeIntegrationTest extends IntegrationTestCase
 
     public function testInvalidRuntimeConfigurationIsRejected(): void
     {
-        $this->host->set('runtime', 'ddev');
+        $this->host->set('runtime', [
+            'type' => 'unknown',
+        ]);
         $this->expectException(\InvalidArgumentException::class);
 
         Runtime::run('php --version');

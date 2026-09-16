@@ -11,10 +11,17 @@ use function Deployer\run;
 
 abstract class RuntimeHost extends Localhost
 {
-    private Host $localhost;
+    private ?Host $localhost = null;
 
     final public function bind(Host $localhost): void
     {
+        if ($this->localhost === $localhost) {
+            return;
+        }
+        if ($this->localhost !== null) {
+            throw new \LogicException('A runtime host cannot be bound to more than one host.');
+        }
+
         $this->localhost = $localhost;
         $this->config()->bind($localhost->config());
         $this->set('working_path', $this->localhostDeployPath());

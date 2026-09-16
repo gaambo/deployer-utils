@@ -2,19 +2,34 @@
 
 namespace Gaambo\DeployerUtils;
 
+use Gaambo\DeployerUtils\Runtime\DdevRuntimeHost;
 use Gaambo\DeployerUtils\Runtime\RuntimeHost;
+use Closure;
 
 /**
- * Create an unregistered runtime host that inherits localhost configuration.
+ * Create a lazy runtime host factory for Deployer configuration.
  *
- * @template T of RuntimeHost
- * @param class-string<T> $runtimeHost
- * @return T
+ * @param class-string<RuntimeHost>|string $runtime
+ * @param array<string,mixed> $options
+ * @return Closure():RuntimeHost
  */
-function runtime(string $runtimeHost): RuntimeHost
+function runtime(string $runtime, array $options = []): Closure
 {
-    $runtime = new $runtimeHost();
-    $runtime->bind(Localhost::get());
+    return static function () use ($runtime, $options): RuntimeHost {
+        $runtimeClass = match ($runtime) {
+            'ddev' => DdevRuntimeHost::class,
+            default => $runtime,
+        };
 
-    return $runtime;
+        if (!is_a($runtimeClass, RuntimeHost::class, true)) {
+            throw new \InvalidArgumentException("Unknown runtime \"$runtime\".");
+        }
+
+        $runtimeHost = new $runtimeClass();
+        foreach ($options as $key => $value) {
+            $runtimeHost->set($key, $value);
+        }
+
+        return $runtimeHost;
+    };
 }

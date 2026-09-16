@@ -31,12 +31,27 @@ localhost()
     ->set('runtime', runtime(DdevRuntimeHost::class));
 ```
 
+Runtime configuration can also come from a Deployer YAML inventory:
+
+```yaml
+hosts:
+  localhost:
+    local: true
+    runtime:
+      type: ddev
+      options:
+        ddev_deploy_path: /srv/app
+```
+
+The `ddev` alias and runtime options are resolved when the runtime is first used. The PHP `runtime()` helper returns a
+lazy factory, so each Deployer worker creates a fresh runtime host.
+
 DDEV maps host paths below localhost's `deploy_path` to `/var/www/html`. Configure another container root on the runtime:
 
 ```php
 localhost()->set(
     'runtime',
-    runtime(DdevRuntimeHost::class)->set('ddev_deploy_path', '/srv/app')
+    runtime(DdevRuntimeHost::class, ['ddev_deploy_path' => '/srv/app'])
 );
 ```
 
