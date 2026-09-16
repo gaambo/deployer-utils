@@ -111,7 +111,7 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         $this->sshClientMock->expects($this->once())
             ->method('run')
             ->willReturnCallback(function ($executionHost, $command, RunParams $options) {
-                $this->assertSame('production', $executionHost->getAlias());
+                $this->assertSame('production:ddev', $executionHost->getAlias());
                 $this->assertSame('wp --info', $command);
                 $this->assertSame(
                     $this->remoteDdevShell('/srv/www', '/var/www/html/current'),
@@ -215,7 +215,7 @@ class RuntimeIntegrationTest extends IntegrationTestCase
                 $this->assertInstanceOf(Host::class, $host);
                 $this->assertNotInstanceOf(DeployerLocalhost::class, $host);
                 $this->assertNotSame($remote, $host);
-                $this->assertSame('production', $host->getAlias());
+                $this->assertSame('production:ddev', $host->getAlias());
                 $this->assertSame('example.com', $host->getHostname());
                 $this->assertSame('deploy', $host->getRemoteUser());
                 $this->assertSame('wp --info', $command);

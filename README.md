@@ -27,6 +27,9 @@ Runtime execution uses two distinct Deployer hosts:
 - The **execution host** is an internal host created by the runtime. It has the same transport type, inherits source-host
   config, and carries runtime-only overrides such as DDEV's `/var/www/html` project path and command wrapper.
 
+Execution hosts use `<source>:<runtime>` aliases such as `localhost:ddev` or `production:ddev`. Deployer therefore marks
+runtime command output clearly while retaining the source host identity in the prefix.
+
 The separate execution host prevents runtime config from changing normal commands on the source host. While
 `Runtime::within()` runs, Deployer uses the execution host as its current context. This also keeps nested
 `Localhost::run()` calls and lazy config such as `bin/php` inside the same runtime. Runtime objects serialize back to

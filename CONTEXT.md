@@ -23,7 +23,8 @@ _Avoid_: runtime host
 
 **Execution host**:
 An internal Deployer host created by a runtime. It preserves the source host's transport type, inherits its config, and
-holds runtime-only path and command-wrapper overrides. It is never a user-configured deployment target.
+holds runtime-only path and command-wrapper overrides. Its alias combines source and runtime names, such as
+`production:ddev`. It is never a user-configured deployment target.
 _Avoid_: source host, runtime host
 
 **Compatibility wrapper**:

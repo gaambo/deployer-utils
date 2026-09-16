@@ -15,9 +15,9 @@ class DdevRuntime extends Runtime
         'ddev_deploy_path' => '/var/www/html',
     ];
 
-    protected function alias(): string
+    protected function name(): string
     {
-        return 'runtime:ddev';
+        return 'ddev';
     }
 
     /**

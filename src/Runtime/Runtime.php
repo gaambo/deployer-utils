@@ -210,7 +210,7 @@ abstract class Runtime implements \JsonSerializable
     /**
      * Returns the runtime name used in diagnostics.
      */
-    abstract protected function alias(): string;
+    abstract protected function name(): string;
 
     /**
      * Applies runtime-specific config to the internal execution host.
@@ -267,7 +267,7 @@ abstract class Runtime implements \JsonSerializable
     final protected function diagnostic(string $message): void
     {
         if (output()->isVerbose()) {
-            output()->writeln("[{$this->alias()}] $message");
+            output()->writeln("[runtime:{$this->name()}] $message");
         }
     }
 
@@ -305,12 +305,13 @@ abstract class Runtime implements \JsonSerializable
      */
     private function createExecutionHost(Host $sourceHost): Host
     {
-        $alias = $sourceHost->getAlias() ?? $this->alias();
+        $sourceAlias = $sourceHost->getAlias() ?? $sourceHost->getHostname() ?? 'host';
+        $executionAlias = "$sourceAlias:{$this->name()}";
         if ($sourceHost instanceof DeployerLocalhost) {
-            return new DeployerLocalhost($alias);
+            return new DeployerLocalhost($executionAlias);
         }
 
-        return (new Host($alias))->setHostname($sourceHost->getHostname() ?? $alias);
+        return (new Host($executionAlias))->setHostname($sourceHost->getHostname() ?? $sourceAlias);
     }
 
     /**
