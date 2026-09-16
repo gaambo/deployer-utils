@@ -5,6 +5,9 @@ the common layer for recipe packages such as `deployer-wordpress`.
 
 This is an early `0.x` release. The API may change before `1.0.0`.
 
+See [`deployer-wordpress`](https://github.com/gaambo/deployer-wordpress) for
+a complete Deployer recipe package using these shared utilities.
+
 ## Table Of Contents
 
 - [Installation](#installation)

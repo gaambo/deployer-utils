@@ -1,5 +1,8 @@
 # Changelog
 
+For historical changes before this package was extracted, see the
+[`deployer-wordpress` changelog](https://github.com/gaambo/deployer-wordpress/blob/main/CHANGELOG.md).
+
 ## Unreleased
 
 No changes yet.
