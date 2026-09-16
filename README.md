@@ -3,7 +3,7 @@
 Shared, platform-neutral helpers for Deployer recipe packages. This package is
 the common layer for recipe packages such as `deployer-wordpress`.
 
-This is an early beta. The API may change before `1.0.0`.
+This is an early `0.x` release. The API may change before `1.0.0`.
 
 ## Table Of Contents
 

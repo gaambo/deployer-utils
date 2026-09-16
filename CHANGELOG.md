@@ -4,9 +4,9 @@
 
 No changes yet.
 
-## 0.1.0-beta.1
+## 0.1.0
 
-Initial public beta release.
+Initial public `0.x` release.
 
 ### Added
 
