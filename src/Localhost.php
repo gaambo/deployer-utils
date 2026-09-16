@@ -55,6 +55,8 @@ class Localhost
     }
 
     /**
+     * Runs a command natively, unless called from an active runtime execution context.
+     *
      * @param array{
      *     cwd?:string|null,
      *     timeout?:int|null,
@@ -68,6 +70,8 @@ class Localhost
      */
     public static function run(string $command, ?array $options = null): string
     {
+        // Runtime::within() replaces Deployer's context host with an internal
+        // execution host. Keep nested localhost calls in that active runtime.
         if (Runtime::isActive()) {
             return Runtime::run($command, $options);
         }

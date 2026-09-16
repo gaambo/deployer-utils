@@ -12,9 +12,19 @@ _Avoid_: common library, Laravel library
 A platform-specific Deployer package `deployer-wordpress` that depends on the shared package.
 _Avoid_: application package
 
-**Local runtime**:
-The environment that runs local application commands, independent from the Deployer localhost host.
-_Avoid_: local host, container host
+**Runtime**:
+An optional command environment attached to a Deployer host. It maps host paths and wraps commands without owning the
+host's local or SSH transport.
+_Avoid_: runtime host, container host
+
+**Source host**:
+The real configured Deployer host that owns a runtime. It retains host-side paths and owns local or SSH transport.
+_Avoid_: runtime host
+
+**Execution host**:
+An internal Deployer host created by a runtime. It preserves the source host's transport type, inherits its config, and
+holds runtime-only path and command-wrapper overrides. It is never a user-configured deployment target.
+_Avoid_: source host, runtime host
 
 **Compatibility wrapper**:
 A deprecated recipe-package class that forwards its old public helper API to the shared package until the next major release.

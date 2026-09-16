@@ -14,13 +14,26 @@ Shared, platform-neutral helpers for Deployer recipe packages.
 composer require gaambo/deployer-utils
 ```
 
-## Localhost And Runtimes
+## Hosts And Runtimes
 
 `Localhost` reads and parses values against the configured `localhost` host. `Localhost::run()` runs natively unless it
-is called inside `Runtime::within()`; `Runtime::run()` always routes application commands through the configured runtime.
+is called inside `Runtime::within()`. `Runtime::run()` routes application commands through the current host's configured
+runtime, while the host still determines whether execution uses a local process or SSH.
+
+Runtime execution uses two distinct Deployer hosts:
+
+- The **source host** is the real configured host. It owns the local or SSH transport and paths as seen outside the
+  runtime, such as `/srv/site`.
+- The **execution host** is an internal host created by the runtime. It has the same transport type, inherits source-host
+  config, and carries runtime-only overrides such as DDEV's `/var/www/html` project path and command wrapper.
+
+The separate execution host prevents runtime config from changing normal commands on the source host. While
+`Runtime::within()` runs, Deployer uses the execution host as its current context. This also keeps nested
+`Localhost::run()` calls and lazy config such as `bin/php` inside the same runtime. Runtime objects serialize back to
+plain definitions when Deployer passes host config between worker processes.
 
 ```php
-use Gaambo\DeployerUtils\Runtime\DdevRuntimeHost;
+use Gaambo\DeployerUtils\Runtime\DdevRuntime;
 
 use function Deployer\localhost;
 use function Gaambo\DeployerUtils\runtime;
@@ -28,7 +41,7 @@ use function Gaambo\DeployerUtils\runtime;
 localhost()
     ->set('deploy_path', __DIR__)
     ->set('current_path', '{{deploy_path}}/public')
-    ->set('runtime', runtime(DdevRuntimeHost::class));
+    ->set('runtime', runtime(DdevRuntime::class));
 ```
 
 Runtime configuration can also come from a Deployer YAML inventory:
@@ -43,20 +56,21 @@ hosts:
         ddev_deploy_path: /srv/app
 ```
 
-The `ddev` alias and runtime options are resolved when the runtime is first used. The PHP `runtime()` helper returns a
-lazy factory, so each Deployer worker creates a fresh runtime host.
+The `ddev` alias and runtime options are resolved by the PHP `runtime()` helper. It returns a serializable runtime object.
+Each source host binds its own clone, so a runtime configured globally can safely serve multiple hosts.
 
-DDEV maps host paths below localhost's `deploy_path` to `/var/www/html`. Configure another container root on the runtime:
+DDEV maps host paths below the source host's `deploy_path` to `/var/www/html`. Configure another container root on the
+runtime:
 
 ```php
 localhost()->set(
     'runtime',
-    runtime(DdevRuntimeHost::class, ['ddev_deploy_path' => '/srv/app'])
+    runtime(DdevRuntime::class, ['ddev_deploy_path' => '/srv/app'])
 );
 ```
 
-Runtime hosts inherit localhost config. Lazy binary values such as `bin/composer`, `bin/npm`, and `bin/php` resolve in
-the runtime and cache there. Use `Runtime::path()` when passing an explicit host path to a runtime command.
+Runtimes inherit their host's config. Lazy binary values such as `bin/composer`, `bin/npm`, and `bin/php` resolve in the
+runtime and cache there. Use `Runtime::path()` when passing an explicit host path to a runtime command.
 
 ## Helpers
 

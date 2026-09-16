@@ -63,4 +63,9 @@ abstract class IntegrationTestCase extends TestCase
     {
         return 'ddev exec --dir ' . Utils::quote($path) . ' bash -s';
     }
+
+    protected function remoteDdevShell(string $hostPath, string $runtimePath): string
+    {
+        return 'cd ' . Utils::quote($hostPath) . ' && ' . $this->ddevShell($runtimePath);
+    }
 }
