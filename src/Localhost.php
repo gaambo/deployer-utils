@@ -12,6 +12,21 @@ use function Deployer\runLocally;
 
 class Localhost
 {
+    /**
+     * @template T
+     * @param callable():T $callback
+     * @return T
+     */
+    public static function within(callable $callback): mixed
+    {
+        Context::push(new Context(self::get()));
+        try {
+            return $callback();
+        } finally {
+            Context::pop();
+        }
+    }
+
     public static function getConfig(string $key, mixed $default = null): mixed
     {
         Context::push(new Context(self::get()));

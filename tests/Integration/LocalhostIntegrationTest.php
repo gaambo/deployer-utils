@@ -39,6 +39,44 @@ class LocalhostIntegrationTest extends IntegrationTestCase
         $this->assertSame($this->host, Localhost::get());
     }
 
+    public function testWithinUsesLocalhostAndRestoresPreviousContext(): void
+    {
+        $remoteHost = new DeployerLocalhost('remote');
+        Context::push(new Context($remoteHost));
+
+        try {
+            $contextHost = Localhost::within(fn() => Context::get()->getHost());
+
+            $this->assertSame($this->host, $contextHost);
+            $this->assertSame($remoteHost, Context::get()->getHost());
+        } finally {
+            Context::pop();
+        }
+    }
+
+    public function testWithinRestoresPreviousContextAfterException(): void
+    {
+        $remoteHost = new DeployerLocalhost('remote');
+        Context::push(new Context($remoteHost));
+
+        try {
+            $thrown = false;
+            try {
+                Localhost::within(function (): void {
+                    throw new \RuntimeException('failed');
+                });
+            } catch (\RuntimeException $exception) {
+                $thrown = true;
+                $this->assertSame('failed', $exception->getMessage());
+            }
+
+            $this->assertTrue($thrown);
+            $this->assertSame($remoteHost, Context::get()->getHost());
+        } finally {
+            Context::pop();
+        }
+    }
+
     public function testRunUsesLocalhostAndNamedOptions(): void
     {
         $runner = $this->createMock(ProcessRunner::class);
