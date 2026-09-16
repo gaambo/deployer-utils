@@ -20,9 +20,9 @@ This is an early `0.x` release. The API may change before `1.0.0`.
   - [Localhost](#localhost)
 - [File Backup Tasks](#file-backup-tasks)
 - [Shared Test Support](#shared-test-support)
-- [Testing](#testing)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
+  - [Testing](#testing)
 - [License](#license)
 
 ## Installation
@@ -202,33 +202,30 @@ Recipe packages can map the support classes in their development autoloader:
 }
 ```
 
-## Testing
-
-Install development dependencies and run the full local check suite:
-
-```bash
-composer install
-composer precommit
-```
-
-The suite includes PHP syntax linting, PSR-12 checks, PHPStan, and unit,
-integration, and functional tests. Individual commands are available as
-`composer tests:unit`, `composer tests:integration`, and
-`composer tests:functional`.
-
-GitHub Actions runs the quality and test jobs on PHP 8.3, 8.4, and 8.5 with
-Deployer 8. Composer dependency audits and lock-file diffs run on dependency
-pull requests.
-
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 
-Issues, feature requests, and pull requests are welcome on
-[GitHub](https://github.com/gaambo/deployer-utils). Run `composer precommit`
-before submitting a pull request.
+Issues, feature requests, and pull requests are welcome at
+[GitHub](https://github.com/gaambo/deployer-utils). Code follows PSR-12 and
+Deployer best practices.
+
+### Testing
+
+The library includes unit, integration, and functional tests.
+
+- Run `composer precommit` before submitting a pull request. It runs lint, code
+  style, PHPStan, Composer validation, and all tests.
+- Functional tests use a mocked environment to verify Deployer commands and
+  file operations without real remote connections.
+- Run `composer tests:unit`, `composer tests:integration`, or
+  `composer tests:functional` to run one test group.
+
+GitHub Actions currently tests Deployer 8 on PHP 8.3, 8.4, and 8.5. The CI
+matrix is structured so supported Deployer versions can be added later.
+Composer dependency audits and lock-file diffs run on dependency pull requests.
 
 ## License
 
