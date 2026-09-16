@@ -3,6 +3,7 @@ name: Code Quality
 on:
   push:
   pull_request:
+  # Allow manually triggering the workflow.
   workflow_dispatch:
 
 concurrency:
@@ -14,23 +15,28 @@ permissions:
 
 jobs:
   code-quality:
-    name: Code Quality (PHP ${{ matrix.php }}, Deployer 8)
+    name: Run Code Quality Checks (PHP ${{ matrix.php }}, Deployer ${{ matrix.deployer }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      checks: write
+      checks: write # needed for cs2pr to post inline annotations
     strategy:
       matrix:
-        php: ['8.3', '8.4', '8.5']
+        include:
+          - { php: '8.3', deployer: '8.0' }
+          - { php: '8.4', deployer: '8.0' }
+          - { php: '8.5', deployer: '8.0' }
       fail-fast: false
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          # Do not store git credentials in .git -> could be leaked/exposed by infected/malicious action.
           persist-credentials: false
 
+      # Setup PHP with Composer and cs2pr
       - name: Setup PHP and tools
         uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2.37.1
         with:
@@ -40,6 +46,13 @@ jobs:
       - name: Validate composer.json
         run: composer validate --strict
 
+      - name: Set Deployer version constraint
+        env:
+          DEPLOYER_VERSION: ${{ matrix.deployer }}
+        run: composer require --no-update deployer/deployer:"${DEPLOYER_VERSION}.*"
+
+      # Install dependencies with caching — uses `composer update` (highest) so the pinned
+      # deployer constraint above is actually resolved.
       - name: Install Composer dependencies
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
         with:
@@ -52,11 +65,13 @@ jobs:
       - name: Run PHP syntax linting
         run: composer run-script lint
 
+      # Run PHP CodeSniffer with GitHub annotations
       - name: Run PHP CodeSniffer
         run: |
           composer run-script phpcs -- --standard=phpcs.xml --report-checkstyle=./phpcs-report.xml
           cs2pr ./phpcs-report.xml
 
+      # Run PHPStan with GitHub annotations
       - name: Run PHPStan
         run: |
           composer run-script phpstan -- --error-format=checkstyle > phpstan-report.xml

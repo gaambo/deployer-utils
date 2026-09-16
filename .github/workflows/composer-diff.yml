@@ -20,12 +20,13 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # needed for sticky-pull-request-comment to post/update PR comments
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Required for IonBazan/composer-diff-action
+          # Do not store git credentials in .git -> could be leaked/exposed by infected/malicious action.
           persist-credentials: false
 
       - name: Setup PHP and tools
@@ -43,9 +44,10 @@ jobs:
 
       - name: Post diff as sticky comment
         uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
+        # An empty diff result will break this action.
         if: ${{ steps.composer-diff.outputs.composer_diff_exit_code != 0 }}
         with:
-          header: composer-diff
+          header: composer-diff # Creates a collapsed comment with the report
           message: |
             <details>
             <summary>Composer package changes</summary>
