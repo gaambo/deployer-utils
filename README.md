@@ -125,8 +125,8 @@ hosts:
 ```
 
 The `runtime()` helper accepts the `ddev` alias or a fully qualified runtime
-class name. Runtime objects serialize to plain definitions for Deployer worker
-processes.
+class name. It returns a plain definition array, so host config stays
+serializable for `dep config` and Deployer worker processes.
 
 ## Helpers
 

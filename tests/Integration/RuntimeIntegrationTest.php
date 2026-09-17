@@ -29,30 +29,43 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         $this->deployer['sshClient'] = $this->sshClientMock;
     }
 
-    public function testHelperCreatesSerializableRuntimeWithoutBecomingAHost(): void
+    public function testHelperCreatesSerializableRuntimeDefinition(): void
     {
         $this->host->set('current_path', '{{deploy_path}}/current');
-        $runtimeTemplate = runtime(DdevRuntime::class);
+        $definition = runtime(DdevRuntime::class);
 
-        $this->assertInstanceOf(DdevRuntime::class, $runtimeTemplate);
-        $this->assertNotInstanceOf(Host::class, $runtimeTemplate);
-        $this->assertSame(
-            ['type' => DdevRuntime::class, 'options' => []],
-            $runtimeTemplate->jsonSerialize()
-        );
+        $this->assertSame(['type' => DdevRuntime::class, 'options' => []], $definition);
         $this->assertSame($this->host, $this->deployer->hosts->get('localhost'));
         $this->assertCount(1, $this->deployer->hosts);
 
-        $this->host->set('runtime', $runtimeTemplate);
+        $this->host->set('runtime', $definition);
         $this->assertSame('/var/www/html', Runtime::getConfig('deploy_path'));
         $this->assertSame('/var/www/html/current', Runtime::getConfig('current_path'));
-        $boundRuntime = $this->host->get('runtime');
-        $this->assertInstanceOf(DdevRuntime::class, $boundRuntime);
-        $this->assertNotSame($runtimeTemplate, $boundRuntime);
-        $this->assertJsonStringEqualsJsonString(
-            json_encode($runtimeTemplate, JSON_THROW_ON_ERROR),
-            json_encode($boundRuntime, JSON_THROW_ON_ERROR)
-        );
+        // Binding a runtime must not replace the definition in host config.
+        $this->assertSame($definition, $this->host->get('runtime'));
+    }
+
+    public function testRuntimeDefinitionSurvivesConfigDump(): void
+    {
+        $this->host->set('runtime', runtime('ddev'));
+
+        $dump = fn() => \Maml\Maml::stringify(['localhost' => $this->host->config()->persist()]);
+
+        $before = $dump();
+        $this->assertStringContainsString('runtime', $before);
+
+        Runtime::getConfig('deploy_path'); // Bind the runtime to the host.
+
+        $this->assertSame($before, $dump());
+    }
+
+    public function testRuntimeObjectInConfigIsRejected(): void
+    {
+        $this->host->set('runtime', Runtime::make('ddev'));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('definition array');
+
+        Runtime::run('php --version');
     }
 
     public function testFactoryResolvesRuntimeAliasAndOptions(): void
@@ -64,12 +77,12 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         $this->assertSame('/srv/app', Runtime::getConfig('deploy_path'));
     }
 
-    public function testGlobalRuntimeTemplateBindsIndependentRuntimePerSourceHost(): void
+    public function testSharedRuntimeDefinitionBindsIndependentRuntimePerSourceHost(): void
     {
-        $runtimeTemplate = runtime('ddev');
-        $this->host->set('runtime', $runtimeTemplate);
+        $definition = runtime('ddev');
+        $this->host->set('runtime', $definition);
         $remote = $this->remoteHost();
-        $remote->set('runtime', $runtimeTemplate);
+        $remote->set('runtime', $definition);
 
         $this->assertSame('/var/www/html', Runtime::getConfig('deploy_path'));
         $this->assertSame(
@@ -77,26 +90,32 @@ class RuntimeIntegrationTest extends IntegrationTestCase
             $this->onHost($remote, fn() => Runtime::getConfig('deploy_path'))
         );
 
-        $localRuntime = $this->host->get('runtime');
-        $remoteRuntime = $remote->get('runtime');
-        $this->assertInstanceOf(DdevRuntime::class, $localRuntime);
-        $this->assertInstanceOf(DdevRuntime::class, $remoteRuntime);
-        $this->assertNotSame($runtimeTemplate, $localRuntime);
-        $this->assertNotSame($runtimeTemplate, $remoteRuntime);
-        $this->assertNotSame($localRuntime, $remoteRuntime);
+        // Each source host binds its own execution host.
+        $localAlias = Runtime::within(fn() => \Deployer\currentHost()->getAlias());
+        $remoteAlias = $this->onHost(
+            $remote,
+            fn() => Runtime::within(fn() => \Deployer\currentHost()->getAlias())
+        );
+        $this->assertSame('localhost:ddev', $localAlias);
+        $this->assertSame('production:ddev', $remoteAlias);
+
+        // Both source hosts keep the plain definition in config.
+        $this->assertSame($definition, $this->host->get('runtime'));
+        $this->assertSame($definition, $remote->get('runtime'));
     }
 
     public function testYamlRuntimeDefinitionIsResolvedForTheActiveHost(): void
     {
-        $this->host->set('runtime', [
+        $definition = [
             'type' => 'ddev',
             'options' => [
                 'ddev_deploy_path' => '/srv/app',
             ],
-        ]);
+        ];
+        $this->host->set('runtime', $definition);
 
         $this->assertSame('/srv/app', Runtime::getConfig('deploy_path'));
-        $this->assertInstanceOf(DdevRuntime::class, $this->host->get('runtime'));
+        $this->assertSame($definition, $this->host->get('runtime'));
     }
 
     public function testSerializedRuntimeDefinitionExecutesAfterWorkerRoundTrip(): void
@@ -126,7 +145,7 @@ class RuntimeIntegrationTest extends IntegrationTestCase
         );
 
         $this->assertSame('WP-CLI 2.12', $result);
-        $this->assertInstanceOf(DdevRuntime::class, $remote->get('runtime'));
+        $this->assertSame($definition, $remote->get('runtime'));
     }
 
     public function testRunFallsBackToNativeLocalhostExecution(): void

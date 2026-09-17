@@ -5,7 +5,11 @@ For historical changes before this package was extracted, see the
 
 ## Unreleased
 
-No changes yet.
+### Fixed
+
+- Fix `dep config` crashing with "Unsupported value type" when a runtime is
+  configured. The `runtime()` helper now returns a plain definition array
+  instead of a `Runtime` object, keeping host config serializable.
 
 ## 0.1.0
 

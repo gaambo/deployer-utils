@@ -26,6 +26,17 @@ abstract class Runtime implements \JsonSerializable
      */
     protected array $defaults = [];
 
+    /**
+     * Bound runtime per source host, kept outside host config so persisted
+     * config stays serializable for `dep config` and worker transport.
+     * WeakMap releases an entry when its host is garbage collected, so no
+     * stale runtimes accumulate and no recycled spl_object_id can alias a
+     * dead host's runtime, which a plain array cache would risk.
+     *
+     * @var \WeakMap<Host,self>|null
+     */
+    private static ?\WeakMap $runtimes = null;
+
     private ?Host $sourceHost = null;
     private ?Host $executionHost = null;
 
@@ -39,21 +50,43 @@ abstract class Runtime implements \JsonSerializable
     }
 
     /**
-     * Resets host-specific state when a configured runtime template is cloned.
-     */
-    final public function __clone()
-    {
-        $this->sourceHost = null;
-        $this->executionHost = null;
-    }
-
-    /**
      * Creates a runtime from its short name or class name.
      *
      * @param class-string<Runtime>|string $type
      * @param array<string,mixed> $options
      */
     final public static function make(string $type, array $options = []): self
+    {
+        $runtimeClass = self::resolveClass($type);
+
+        return new $runtimeClass($options);
+    }
+
+    /**
+     * Builds a serializable runtime definition for host configuration.
+     *
+     * Host config must hold this plain definition, not a Runtime object, so
+     * `dep config` can dump it and Deployer can pass it to worker processes.
+     *
+     * @param class-string<Runtime>|string $type
+     * @param array<string,mixed> $options
+     * @return array{type:class-string<Runtime>,options:array<string,mixed>}
+     */
+    final public static function define(string $type, array $options = []): array
+    {
+        return [
+            'type' => self::resolveClass($type),
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * Resolves and validates a runtime short name or class name.
+     *
+     * @param class-string<Runtime>|string $type
+     * @return class-string<Runtime>
+     */
+    private static function resolveClass(string $type): string
     {
         $runtimeClass = match ($type) {
             'ddev' => DdevRuntime::class,
@@ -66,7 +99,7 @@ abstract class Runtime implements \JsonSerializable
             throw new \InvalidArgumentException("Runtime \"$type\" must be instantiable.");
         }
 
-        return new $runtimeClass($options);
+        return $runtimeClass;
     }
 
     /**
@@ -325,21 +358,23 @@ abstract class Runtime implements \JsonSerializable
         }
 
         if ($configuration instanceof self) {
-            if ($configuration->executionHost === $contextHost || $configuration->sourceHost === $contextHost) {
+            // An execution host carries its bound runtime object directly.
+            if ($configuration->executionHost === $contextHost) {
                 return $configuration;
             }
 
-            // A global runtime object is a template shared by host configs.
-            // Clone it so binding one source host cannot affect another.
-            $runtime = clone $configuration;
-            $contextHost->set('runtime', $runtime);
-            $runtime->bind($contextHost);
+            throw new \InvalidArgumentException(
+                'Runtime configuration must be a definition array from runtime(), not a Runtime object.'
+            );
+        }
 
-            return $runtime;
+        self::$runtimes ??= new \WeakMap();
+        if (isset(self::$runtimes[$contextHost])) {
+            return self::$runtimes[$contextHost];
         }
 
         if (!is_array($configuration)) {
-            throw new \InvalidArgumentException('Runtime configuration must be a Runtime or runtime definition.');
+            throw new \InvalidArgumentException('Runtime configuration must be a runtime definition array.');
         }
 
         $type = $configuration['type'] ?? null;
@@ -352,8 +387,8 @@ abstract class Runtime implements \JsonSerializable
         }
 
         $runtime = self::make($type, $options);
-        $contextHost->set('runtime', $runtime);
         $runtime->bind($contextHost);
+        self::$runtimes[$contextHost] = $runtime;
 
         return $runtime;
     }
