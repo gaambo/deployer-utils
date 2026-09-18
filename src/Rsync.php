@@ -42,25 +42,25 @@ class Rsync
         }
 
         $options = array_key_exists('options', $config) ? $config['options'] : ($defaultConfig['options'] ?? []);
-        $options = Utils::parseStringArray((array) $options);
+        $options = self::parseStringArray((array) $options);
         $exclude = array_key_exists('exclude', $config) ? $config['exclude'] : ($defaultConfig['exclude'] ?? []);
-        $exclude = Utils::parseStringArray((array) $exclude);
+        $exclude = self::parseStringArray((array) $exclude);
         $excludeFile = array_key_exists('exclude-file', $config)
             ? $config['exclude-file'] : ($defaultConfig['exclude-file'] ?? null);
-        $excludeFile = Utils::parseStringOrNull($excludeFile);
+        $excludeFile = self::parseStringOrNull($excludeFile);
         $include = array_key_exists('include', $config) ? $config['include'] : ($defaultConfig['include'] ?? []);
-        $include = Utils::parseStringArray((array) $include);
+        $include = self::parseStringArray((array) $include);
         $includeFile = array_key_exists('include-file', $config)
             ? $config['include-file'] : ($defaultConfig['include-file'] ?? null);
-        $includeFile = Utils::parseStringOrNull($includeFile);
+        $includeFile = self::parseStringOrNull($includeFile);
         $filter = array_key_exists('filter', $config) ? $config['filter'] : ($defaultConfig['filter'] ?? []);
-        $filter = Utils::parseStringArray((array) $filter);
+        $filter = self::parseStringArray((array) $filter);
         $filterFile = array_key_exists('filter-file', $config)
             ? $config['filter-file'] : ($defaultConfig['filter-file'] ?? null);
-        $filterFile = Utils::parseStringOrNull($filterFile);
+        $filterFile = self::parseStringOrNull($filterFile);
         $filterPerDir = array_key_exists('filter-perdir', $config)
             ? $config['filter-perdir'] : ($defaultConfig['filter-perdir'] ?? null);
-        $filterPerDir = Utils::parseStringOrNull($filterPerDir);
+        $filterPerDir = self::parseStringOrNull($filterPerDir);
 
         return array_filter([
             ...self::buildOptions($options),
@@ -68,6 +68,23 @@ class Rsync
             ...self::buildExcludes($exclude, $excludeFile),
             ...self::buildFilter($filter, $filterFile, $filterPerDir),
         ]);
+    }
+
+    /**
+     * @param array<mixed> $array
+     * @return array<string>
+     */
+    private static function parseStringArray(array $array): array
+    {
+        return array_values(array_filter(array_map(
+            fn($value) => is_string($value) ? $value : null,
+            $array
+        )));
+    }
+
+    private static function parseStringOrNull(mixed $string): ?string
+    {
+        return is_string($string) ? $string : null;
     }
 
     /**

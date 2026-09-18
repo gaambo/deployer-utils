@@ -5,6 +5,13 @@ For historical changes before this package was extracted, see the
 
 ## Unreleased
 
+### Breaking Changes
+
+- Remove `Utils::quote()`. Use Deployer's `quote()` directly; this package requires
+  Deployer 8, where the old Deployer 7 compatibility wrapper is no longer needed.
+- Remove the `Utils::parseStringArray()` and `Utils::parseStringOrNull()` helpers.
+  Their config-specific behavior now lives in `Rsync`.
+
 ### Fixed
 
 - Fix `dep config` crashing with "Unsupported value type" when a runtime is

@@ -40,11 +40,4 @@ class UtilsIntegrationTest extends IntegrationTestCase
             'debug' => [false, false, true, '-vvv'],
         ];
     }
-
-    public function testConfigParsingHelpers(): void
-    {
-        $this->assertSame(['one', 'two'], Utils::parseStringArray(['one', null, 2, 'two']));
-        $this->assertSame('value', Utils::parseStringOrNull('value'));
-        $this->assertNull(Utils::parseStringOrNull(false));
-    }
 }

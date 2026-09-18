@@ -4,7 +4,8 @@ namespace Gaambo\DeployerUtils\Runtime;
 
 use Deployer\Host\Host;
 use Deployer\Host\Localhost;
-use Gaambo\DeployerUtils\Utils;
+
+use function Deployer\quote;
 
 /**
  * Runs commands inside a host project's DDEV web container.
@@ -84,9 +85,9 @@ class DdevRuntime extends Runtime
         if ($showDiagnostic) {
             $this->diagnostic("cwd: $hostCwd -> $runtimeCwd");
         }
-        $shell = 'ddev exec --dir ' . Utils::quote($runtimeCwd) . ' bash -s';
+        $shell = 'ddev exec --dir ' . quote($runtimeCwd) . ' bash -s';
         if (!$this->sourceHost() instanceof Localhost) {
-            $shell = 'cd ' . Utils::quote($this->hostDeployPath()) . ' && ' . $shell;
+            $shell = 'cd ' . quote($this->hostDeployPath()) . ' && ' . $shell;
         }
         $this->executionHost()->setShell($shell);
     }

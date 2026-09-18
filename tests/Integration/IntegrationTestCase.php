@@ -7,12 +7,13 @@ use Deployer\Host\Host;
 use Deployer\Host\Localhost;
 use Deployer\Ssh\RunParams;
 use Deployer\Task\Context;
-use Gaambo\DeployerUtils\Utils;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\Input;
 use Symfony\Component\Console\Output\Output;
+
+use function Deployer\quote;
 
 abstract class IntegrationTestCase extends TestCase
 {
@@ -61,11 +62,11 @@ abstract class IntegrationTestCase extends TestCase
 
     protected function ddevShell(string $path): string
     {
-        return 'ddev exec --dir ' . Utils::quote($path) . ' bash -s';
+        return 'ddev exec --dir ' . quote($path) . ' bash -s';
     }
 
     protected function remoteDdevShell(string $hostPath, string $runtimePath): string
     {
-        return 'cd ' . Utils::quote($hostPath) . ' && ' . $this->ddevShell($runtimePath);
+        return 'cd ' . quote($hostPath) . ' && ' . $this->ddevShell($runtimePath);
     }
 }
