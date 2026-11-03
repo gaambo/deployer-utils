@@ -5,6 +5,13 @@ For historical changes before this package was extracted, see the
 
 ## Unreleased
 
+## 1.0.1
+
+### Maintenance
+
+- Update Composer packages to patch releases.
+- Update GitHub Actions to patch releases.
+
 ## 1.0.0
 
 First stable release, with the same API and behavior as `0.2.0`. Requires PHP 8.3
