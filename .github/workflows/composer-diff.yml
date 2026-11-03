@@ -23,7 +23,7 @@ jobs:
       pull-requests: write # needed for sticky-pull-request-comment to post/update PR comments
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # Required for IonBazan/composer-diff-action
           # Do not store git credentials in .git -> could be leaked/exposed by infected/malicious action.
@@ -40,7 +40,9 @@ jobs:
 
       - name: Generate composer.lock diff
         id: composer-diff
-        uses: IonBazan/composer-diff-action@3140157575f6a67799cc80248ae35f5fb303ab15 # v1.2.0
+        uses: IonBazan/composer-diff-action@e2022e8718d05cc6e4e5990a06fc928c75837f76 # v2.0.0
+        with:
+          format: mdtable
 
       - name: Post diff as sticky comment
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5

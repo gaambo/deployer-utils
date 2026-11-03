@@ -10,7 +10,7 @@ For historical changes before this package was extracted, see the
 ### Maintenance
 
 - Update Composer packages.
-- Update GitHub Actions to patch releases.
+- Update GitHub Actions.
 
 ## 1.0.0
 
