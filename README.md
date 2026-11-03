@@ -3,7 +3,8 @@
 Shared, platform-neutral helpers for Deployer recipe packages. This package is
 the common layer for recipe packages such as `deployer-wordpress`.
 
-This is an early `0.x` release. The API may change before `1.0.0`.
+The `1.x` release series is intended for production use. We aim to keep the public
+API backward compatible within `1.x`.
 
 See [`deployer-wordpress`](https://github.com/gaambo/deployer-wordpress) for
 a complete Deployer recipe package using these shared utilities.

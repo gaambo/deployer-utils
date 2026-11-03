@@ -5,6 +5,13 @@ For historical changes before this package was extracted, see the
 
 ## Unreleased
 
+## 1.0.0
+
+First stable release, with the same API and behavior as `0.2.0`. Requires PHP 8.3
+or newer and Deployer 8, as in the `0.x` releases.
+
+## 0.2.0
+
 ### Breaking Changes
 
 - Remove `Utils::quote()`. Use Deployer's `quote()` directly; this package requires
@@ -12,11 +19,19 @@ For historical changes before this package was extracted, see the
 - Remove the `Utils::parseStringArray()` and `Utils::parseStringOrNull()` helpers.
   Their config-specific behavior now lives in `Rsync`.
 
+## 0.1.2
+
 ### Fixed
 
 - Fix `dep config` crashing with "Unsupported value type" when a runtime is
   configured. The `runtime()` helper now returns a plain definition array
   instead of a `Runtime` object, keeping host config serializable.
+
+## 0.1.1
+
+### Documentation
+
+- Align README release sections and document the early `0.x` API status.
 
 ## 0.1.0
 
