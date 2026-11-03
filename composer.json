@@ -57,7 +57,7 @@
       "@lint",
       "@phpcs",
       "@phpstan",
-      "@composer validate",
+      "@composer validate --strict",
       "@tests"
     ]
   },
