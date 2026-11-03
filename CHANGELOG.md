@@ -9,7 +9,7 @@ For historical changes before this package was extracted, see the
 
 ### Maintenance
 
-- Update Composer packages to patch releases.
+- Update Composer packages.
 - Update GitHub Actions to patch releases.
 
 ## 1.0.0
